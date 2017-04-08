@@ -1,0 +1,226 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Config Page</title>
+<script type="text/javascript" src="./js/common_axisj.js"></script>
+<script type="text/javascript" src="./js/jquery.cookie.js"></script>
+<link rel="stylesheet" type="text/css" href="./js/axicon-0.3/axicon/axicon.min.css" />
+<script type="text/javascript">
+	var cookieKey = 'CERT-WebControlPage';
+	var tempCookieKey = 'CERT-WebControlPage-temp';
+	
+	$('document').ready(function() {
+		makeTable();
+		$('#Tooltip').bindTooltip({width: 300, direction: 'auto'});
+	});
+	
+	function deleteCookie() {
+		if (confirm('저장된 정보가 모두 삭제됩니다. 계속 하시겠습니까?')) {
+			$.cookie(cookieKey, null, {path: '/'});
+			$.cookie(tempCookieKey, null, {path: '/'});
+			alert('쿠키가 삭제되었습니다.');
+		}
+	}
+	
+	function loadCookie() {
+		var temp = $.cookie(cookieKey);
+		if (temp && temp != 'null') {
+			var res = {};
+			res.isNew = temp.split("@$_$@")[1];
+			temp = temp.split("@$_$@")[0];
+			res.pageList = [];
+			res.refreshInterval = temp.split("@-_-@")[1];
+			var param = temp.split("@-_-@")[0].split("@^_^@");
+			for (var i = 0; i < param.length; i++) {
+				var temp2 = param[i].split("@T_T@")
+				var url = temp2[0];
+				var title = temp2[1].split("@~_~@")[0];
+				var zoom = temp2[1].split("@~_~@")[1];
+				
+				res.pageList.push({
+					url: url,
+					title: title,
+					zoom: zoom
+				});
+			}
+			return res;
+		}
+		else 
+			return {};
+	}
+	
+	function saveCookie() {
+		var content = "";
+		
+		var chkIndex = 0;
+		$('.addressList').each(function(index) {
+			var val = $(this).find('input').val();
+			if (val == '' || val == null)
+				return;
+			
+			if (index != 0)
+				content += "@^_^@";
+			content += val;
+			
+			var title = $(this).parent().find('.titleList input').val();
+			if (title != '' && title != null)
+				content += "@T_T@" + title;
+			else
+				content += "@T_T@";
+			
+			var zoom = $(this).parent().find('.zoomList select').val();
+			content += "@~_~@" + zoom;
+			
+			chkIndex++;
+		});
+		
+		if (chkIndex == 0) {
+			alert('내용이 없습니다.');
+			return;
+		}
+		
+		var time = $('#refreshInterval').val();
+		if (time == '' || time == null) {
+			if ($.cookie(cookieKey)) {
+				time = $.cookie(cookieKey).split("@-_-@")[1];
+			}
+			else {
+				time = '30';
+			}
+		}
+		if (isNaN(time)) {
+			alert('새로고침 주기는 숫자만 기입해주세요.');
+			return;
+		}
+		content += "@-_-@" + $('#refreshInterval').val() + "000";
+		
+		content += "@$_$@11";
+		
+		$.cookie(cookieKey, content, {expires: 1, path: '/'});
+		alert('저장되었습니다.');
+	}
+	
+	function makeTable() {
+		var obj = loadCookie();
+		var cnt = 1;
+		var listLength = 0;
+		if (obj.pageList)
+			listLength = obj.pageList.length;
+		
+		for (var i = 0; i < listLength; i++) {
+			$('tbody').append(
+					'<tr>' +
+						'<td>' + cnt + '</td>' +
+						'<td colspan="7" class="titleList"><input class="AXInputSmall" type="text" style="width: 96%;" value="'+obj.pageList[i].title+'"></td>' +
+						'<td colspan="13" class="addressList"><input class="AXInputSmall" type="text" value="' + obj.pageList[i].url + '" style="width: 98%;"></td>' +
+						'<td colspan="2" class="zoomList"><select><option value="1">100%</option><option value="0.9">90%</option><option value="0.8">80%</option><option value="0.7">70%</option><option value="0.6">60%</option><option value="0.5">50%</option><option value="0.4">40%</option><option value="0.3">30%</option><option value="0.2">20%</option><option value="0.1">10%</option><option value="1.2">120%</option><option value="1.5">150%</option><option value="1.8">180%</option><option value="2">200%</option></select></td>' +
+						'<td class="checkList"><input type="checkbox"></td>' +
+					'</tr>'
+					);	
+			
+			$('tbody tr:eq('+i+') .zoomList select option').each(function() {
+				if (obj.pageList[i].zoom == $(this).val())
+					$(this).attr('selected', 'selected');
+			});
+			cnt++;
+		}
+		for (var i = 0; i < 10 - listLength; i++) {
+			$('tbody').append(
+					'<tr>' +
+						'<td>' + cnt + '</td>' +
+						'<td colspan="7" class="titleList"><input class="AXInputSmall" type="text" style="width: 96%;"></td>' +
+						'<td colspan="13" class="addressList"><input class="AXInputSmall" type="text" style="width: 98%;"></td>' + 
+						'<td colspan="2" class="zoomList"><select><option value="1">100%</option><option value="0.9">90%</option><option value="0.8">80%</option><option value="0.7">70%</option><option value="0.6">60%</option><option value="0.5">50%</option><option value="0.4">40%</option><option value="0.3">30%</option><option value="0.2">20%</option><option value="0.1">10%</option><option value="1.2">120%</option><option value="1.5">150%</option><option value="1.8">180%</option><option value="2">200%</option></select></td>' +
+						'<td class="checkList"><input type="checkbox"></td>' +
+					'</tr>'
+					);	
+			cnt++;
+		}
+		
+		$('#refreshInterval').val((obj.refreshInterval+'').substring(0,(obj.refreshInterval+'').length - 3));
+	}
+	
+	function changeAll() {
+		$('.zoomList select').each(function() {
+			$(this).find('option[value="'+$('#changeAll').val()+'"]').attr('selected', 'selected');
+		});
+	}
+	
+	function checkAll() {
+		if ($('#checkAll').is(':checked')) {
+			$('.checkList input').each(function() {
+				$(this).prop('checked', true);
+			});
+		}
+		else {
+			$('.checkList input').each(function() {
+				$(this).prop('checked', false);
+			});
+		}
+	}
+	
+	function brandNewWorld() {
+		$('.checkList input:checked').each(function() {
+			var $parent = $(this).parent().parent();
+			
+			$parent.find('.titleList input').val('');
+			$parent.find('.addressList input').val('');
+			$parent.find('.zoomList select option[value=1]').attr('selected', 'selected');
+		});
+		
+		$('input[type=checkbox]').each(function() {
+			$(this).prop('checked', false);
+		});
+	}
+</script>
+<style type="text/css">
+	a {
+		text-decoration: none;
+	}
+	.AXPopOverTooltip {
+		border: none;
+		background-color: #eee;
+	}
+	.AXPopOverTooltip .arrowBottom, .AXPopOverTooltip .arrowTop {
+		background: none;
+	}
+</style>
+</head>
+<body>
+<div style="width: 950px; font-family: 'Dotum'; cursor: default;">
+	<div style="margin: 10px; text-align: center; cursor: default;"><b style="font-size: 30px;">관제 페이지 설정</b><button type="button" id="Tooltip" class="AXButtonSmall" style="margin-left: 10px; margin-top: -9px;"><span class="axi axi-info" style="font-size: 18px;"></span></button></div>
+	<table class="AXGridTable" style="text-align: center;">
+		<thead>
+			<tr>
+				<td>순번</td>
+				<td colspan="7">제목</td>
+				<td colspan="13">주소</td>
+				<td colspan="2"><select id="changeAll" onchange="changeAll()"><option value="1">선택</option><option value="1">100%</option><option value="0.9">90%</option><option value="0.8">80%</option><option value="0.7">70%</option><option value="0.6">60%</option><option value="0.5">50%</option><option value="0.4">40%</option><option value="0.3">30%</option><option value="0.2">20%</option><option value="0.1">10%</option><option value="1.2">120%</option><option value="1.5">150%</option><option value="1.8">180%</option><option value="2">200%</option></select></td>
+				<td><input id="checkAll" type="checkbox" onchange="checkAll()"></td>
+			</tr>
+		</thead>
+		<tbody></tbody>
+		<tfoot>
+			<tr>
+				<td colspan="24">
+					<div style="float: right;">
+						새로고침 주기 : <input class="AXInputSmall" type="text" id="refreshInterval" style="text-align: right;"> (초) &nbsp;&nbsp;&nbsp;
+						<button class="AXButtonSmall Green" onclick="deleteCookie()">쿠키 삭제</button>
+						<button class="AXButtonSmall Green" onclick="brandNewWorld()">선택한 행 초기화</button>
+						<button class="AXButtonSmall Green" onclick="saveCookie()">저장</button>
+						<a href="ControlPage.html" class="AXButtonSmall Green">관제 페이지로</a>
+					</div>
+				</td>
+			</tr>
+		</tfoot>
+	</table>
+</div>
+<div id="Tooltip_AX_tooltip" class="AXTooltipContent">
+	<div style="border: 1px dashed #ccc; padding: 10px; font-size: 12px; cursor: default; background-color: #fff; color: #333; border-radius: 5px;">
+		쿠키로 값이 저장됨<br>
+		인터넷 임시파일 삭제시 주의 요망!
+	</div>
+</div>
+</body>
+</html>

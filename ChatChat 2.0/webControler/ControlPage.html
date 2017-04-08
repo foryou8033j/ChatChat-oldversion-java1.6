@@ -1,0 +1,307 @@
+﻿<html>
+<head>
+<meta charset="UTF-8">
+<title>Web Control Page</title>
+<script type="text/javascript" src="./js/common_axisj.js"></script>
+<script type="text/javascript" src="./js/jquery.cookie.js"></script>
+<script type="text/javascript">
+
+	var cookieKey = 'CERT-WebControlPage';
+	var tempCookieKey = 'CERT-WebControlPage-temp';
+	
+	var myProgress = new AXProgress();
+	var _showLoadingBar;
+	
+	$('document').ready(function() {
+		if (loadCookie() == null) {
+			alert('설정된 값이 없습니다.\n설정페이지로 이동합니다.');
+			location.href = 'ConfigPage.html';
+		}
+		try {
+			initIframe();
+		} catch(e) {}
+	});
+	
+	function loadCookie() {
+		var temp = $.cookie(cookieKey);
+		if (temp) {
+			var res = {};
+			res.isNew = temp.split("@$_$@")[1];
+			temp = temp.split("@$_$@")[0];
+			res.pageList = [];
+			res.refreshInterval = temp.split("@-_-@")[1];
+			var param = temp.split("@-_-@")[0].split("@^_^@");
+			for (var i = 0; i < param.length; i++) {
+				var temp2 = param[i].split("@T_T@")
+				var url = temp2[0];
+				var title = temp2[1].split("@~_~@")[0];
+				var zoom = temp2[1].split("@~_~@")[1];
+				
+				res.pageList.push({
+					url: url,
+					title: title,
+					zoom: zoom
+				});
+			}
+			return res;
+		}
+		else 
+			return null;
+	}
+	
+	function loadTempCookie() {
+		var temp = $.cookie(tempCookieKey);
+		if (temp) {
+			var res = {};
+			res.isNew = temp.split("@$_$@")[1];
+			temp = temp.split("@$_$@")[0];
+			res.pageList = [];
+			res.refreshInterval = temp.split("@-_-@")[1];
+			var param = temp.split("@-_-@")[0].split("@^_^@");
+			for (var i = 0; i < param.length; i++) {
+				var temp2 = param[i].split("@T_T@")
+				var url = temp2[0];
+				var title = temp2[1].split("@~_~@")[0];
+				var zoom = temp2[1].split("@~_~@")[1];
+				
+				res.pageList.push({
+					url: url,
+					title: title,
+					zoom: zoom
+				});
+			}
+			return res;
+		}
+		else 
+			return null;
+	}
+	
+	function saveTempCookie(obj) {
+		var str = "";
+		for (var i = 0; i < obj.pageList.length; i++) {
+			if (i != 0)
+				str += "@^_^@";
+			str += obj.pageList[i].url;
+			str += "@T_T@" + obj.pageList[i].title;
+			str += "@~_~@" + obj.pageList[i].zoom;
+		}
+		str += "@-_-@" + obj.refreshInterval;
+		str += "@$_$@" + obj.isNew;
+		$.cookie(tempCookieKey, str, {expires: 1, path: '/'});
+	}
+	
+	function changeIsNew() {
+		var temp = $.cookie(cookieKey);
+		var temp2;
+		if (_showLoadingBar)
+			temp2 = '01';
+		else
+			temp2 = '00';
+		var content = temp.substring(0,temp.length-2) + temp2;
+		$.cookie(cookieKey, content, {expires: 1, path: '/'});
+	}
+	
+	function initRefresh(refreshInterval, obj) {
+		
+		myProgress.setConfig({
+			theme:"AXlineProgress",
+			duration:1000
+		});
+		
+		myProgress.start(function(){
+			if(this.isEnd){
+				myProgress.close();
+			}else{
+				myProgress.update();
+			}	
+		}, 
+		{
+			totalCount: refreshInterval/1000,
+			width:900, 
+			left: 0,
+			title:"새로고침",
+			cancel: {
+				confirmMsg:"정말 취소하시겠습니까?",
+				oncancel:function(){
+					myProgress.close();
+					stopRefresh(refreshFunc);
+					toast.push("다시 시작하려면 새로고침을 해주세요.");	
+				}
+			}
+		});
+		
+		$('.AXprogressTray').css('top', '93%');
+		$('.AXprogressTray').css('cursor', 'default');
+		$('.AXprogressTray').css('padding', '5px 5px 10px 5px');
+		$('.AXprogressTray').css('width', '1000px');
+		var wid = $('body').width() - 1000;
+		$('.AXprogressTray').css('margin', '0 ' + wid/2 + 'px 0 ' + wid/2 + 'px');
+		$('.AXprogressTray').css('background-color', '#eee');
+		$('.AXprogressTray').css('border-radius', '30px');
+		$('.AXprogressTray').css('box-shadow', '5px 2px 30px #888');
+		$('.AXprogressTitle').prepend('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
+		$('.AXprogressTitle').append(' <button class="AXButtonSmall" onclick="hideLoadingBar()" style="margin-left: 3px; margin-top: -3px;">숨기기</button>');
+		$('.AXprogressTitle').append(' <a href="ConfigPage.html" class="AXButtonSmall" style="margin-left: 3px; margin-top: -3px;">설정페이지로</a>');
+		
+		if (!_showLoadingBar)
+			hideLoadingBar();
+		
+		var refreshFunc = setInterval(function() {
+
+			if (_showLoadingBar)
+				obj.isNew = '01';
+			else
+				obj.isNew = '00';
+			saveTempCookie(obj);
+			location.reload();
+			}, refreshInterval);
+	}
+	
+	function stopRefresh(refreshFunc) {
+		clearInterval(refreshFunc);
+	}
+	
+	function getIframeContent(targetID) {
+		var ifrm = document.getElementById(targetID);
+		
+		return ifrm.contentWindow||ifrm.contentDocument;
+	}
+	
+	function initIframe() {
+		var obj = loadCookie();
+		if (obj.isNew.substring(0,1) == '0') {
+			obj = loadTempCookie();
+		}
+		else {
+			changeIsNew();
+		}
+		if (obj.isNew.substring(1,2) == '1') {
+			_showLoadingBar = true;	
+		}
+		else {
+			_showLoadingBar = false;
+		}
+		var arr = obj.pageList;
+		
+		var tempObj = {};
+		tempObj.refreshInterval = obj.refreshInterval;
+		tempObj.pageList = [];
+		
+
+		if (arr.length < 3) {
+			$('.frameTag').css('width', '50%');
+			$('.frameTag').css('height', '100%');
+		}
+		else if (arr.length < 5) {
+			$('.frameTag').css('width', '50%');
+		}
+		else if (arr.length < 7) {
+			$('.frameTag').css('width', '33.2%');
+		}
+		else if (arr.length < 9) {
+			$('.frameTag').css('width', '25%');
+		}
+		else {
+			$('.frameTag').css('width', '20%');
+		}
+
+
+		for (var i=0; i < arr.length; i++) {
+			var widthVal = 100 / arr[i].zoom;
+			
+			$('#frame'+(i+1)).css('-webkit-transform', 'scale('+arr[i].zoom+')');
+
+			$('#frameWrapper').append(
+					'<div class="frameTag">' +
+						'<div style="text-align: center; cursor: default; border: 1px solid #000;"><span class="titleText">' + (arr[i].title==''?'-':arr[i].title) + ' ('+(arr[i].zoom*100)+'%)</span></div>' + '<iframe id="frame'+(i+1)+'" src="'+arr[i].url+'" width="'+widthVal+'%" height="'+(widthVal-15)+'%">iframe 태그가 지원되지 않는 브라우저입니다.</iframe>' +
+					'</div>'
+					);
+			if (i == 0)
+				continue;
+			else {
+				tempObj.pageList.push(arr[i]);
+			}
+		}
+		tempObj.pageList.push(arr[0]);
+		
+
+		initRefresh(obj.refreshInterval, tempObj);
+		
+		//saveTempCookie(tempObj);
+	}
+	
+	function resizeFunc() {
+		var wid;
+		if (_showLoadingBar)
+			wid = $('body').width() - 1000;
+		else
+			wid = $('body').width() - 100;
+		$('.AXprogressTray').css('margin', '0 ' + wid/2 + 'px 0 ' + wid/2 + 'px');
+	}
+	
+	function hideLoadingBar() {
+		$('.AXprogressTray').children().each(function() {
+			$(this).hide();
+		});
+		$('.AXprogressTray').append('<button class="AXButtonSmall" onclick="showLoadingBar()" id="showLoading">나타내기</button>');
+		$('.AXprogressTray').css('width', '100px');
+		$('.AXprogressTray').css('top', '96%');
+		$('.AXprogressTray').css('opacity', '0.2');
+		$('.AXprogressTray').css('transition', 'opacity 0.5s ease 0s');
+		$('.AXprogressTray').hover(
+				function() {
+					$(this).css('opacity', '1');
+				},
+				function() {
+					$(this).css('opacity', '0.2');
+				}
+				);
+		_showLoadingBar = false;
+		resizeFunc();
+	}
+	
+	function showLoadingBar() {
+		$('#showLoading').remove();
+		$('.AXprogressTray').children().each(function() {
+			$(this).show();
+		});
+		$('.AXprogressTray').css('width', '1000px');
+		$('.AXprogressTray').css('top', '93%');
+		$('.AXprogressTray').css('opacity', '1');
+		$('.AXprogressTray').unbind('mouseenter mouseleave');
+		_showLoadingBar = true;
+		resizeFunc();
+	}
+</script>
+<style type="text/css">
+	#contentWrapper {
+		height: 900px;
+	}
+	#contentWrapper>div {
+		position: relative;
+	}
+	#frameWrapper {
+		height: 100%;
+	}
+	.frameTag {
+		position: relative;
+		float: left;
+		width: 25%;
+		height: 50%;
+	}
+	iframe {
+		border: none;
+		-webkit-transform-origin: 0 0;
+	}
+	a {
+		text-decoration: none;
+	}
+</style>
+</head>
+<body onresize="resizeFunc()" style="overflow: hidden;">
+<div style="text-align: center; padding: 10px; cursor: default;"><b style="font-size: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;정보체계관리단 사이버방호센터</b> - Developed by 626 박유현</div>
+<div id="contentWrapper">
+	<div id="frameWrapper"></div>
+</div>
+</body>
+</html>
