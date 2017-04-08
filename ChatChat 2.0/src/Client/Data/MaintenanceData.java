@@ -70,7 +70,7 @@ public class MaintenanceData
 	
 	
 	/******************** 게임 데이터 관리 ***********************/
-	final public static boolean isUpdateRank = true; //랭킹 서버에 연결하여 데이터 송수신 여부
+	final public static boolean isUpdateRank = false; //랭킹 서버에 연결하여 데이터 송수신 여부
 	
 	/**
 	 * 클라이언트 고유 해쉬값 생성
